@@ -69,7 +69,7 @@ internal protocol MenuModel {
     @objc optional func sideMenuDidDisappear(menu: SideMenuNavigationController, animated: Bool)
 }
 
-internal protocol SideMenuNavigationControllerTransitionDelegate: class {
+internal protocol SideMenuNavigationControllerTransitionDelegate: AnyObject {
     func sideMenuTransitionDidDismiss(menu: Menu)
 }
 
@@ -108,8 +108,8 @@ internal typealias Menu = SideMenuNavigationController
 typealias Model = MenuModel & PresentationModel & AnimationModel
 
 @objcMembers
-open class SideMenuNavigationController: UINavigationController {
-    
+open class SideMenuNavigationController: UINavigationController, Model {
+
     private lazy var _leftSide = Protected(false) { [weak self] oldValue, newValue in
         guard self?.isHidden != false else {
             Print.warning(.property, arguments: .leftSide, required: true)
@@ -332,10 +332,8 @@ open class SideMenuNavigationController: UINavigationController {
         }
         set { Print.warning(.transitioningDelegate, required: true) }
     }
-}
 
-// Interface
-extension SideMenuNavigationController: Model {
+    // Interface
 
     @IBInspectable open var allowPushOfSameClassTwice: Bool {
         get { return settings.allowPushOfSameClassTwice }
