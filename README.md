@@ -216,7 +216,7 @@ var animationOptions: UIView.AnimationOptions = .curveEaseInOut
 
  - Note: If you want cells in a UITableViewController menu to show vibrancy, make them a subclass of UITableViewVibrantCell.
  */
-var blurEffectStyle: UIBlurEffect.Style? = nil
+var blurEffectStyle: UIBlurEffect.Style?
 /// Duration of the remaining animation when the menu is partially dismissed with gestures. Default is 0.35 seconds.
 var completeGestureDuration: Double = 0.35
 /// Animation curve of the remaining animation when the menu is partially dismissed with gestures. Default is .easeIn.

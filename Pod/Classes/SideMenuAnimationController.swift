@@ -7,7 +7,7 @@
 
 import UIKit
 
-internal protocol AnimationModel {
+protocol AnimationModel {
     /// The animation options when a menu is displayed. Ignored when displayed with a gesture.
     var animationOptions: UIView.AnimationOptions { get }
     /// Duration of the remaining animation when the menu is partially dismissed with gestures. Default is 0.35 seconds.
@@ -22,12 +22,12 @@ internal protocol AnimationModel {
     var usingSpringWithDamping: CGFloat { get }
 }
 
-internal protocol SideMenuAnimationControllerDelegate: AnyObject {
+protocol SideMenuAnimationControllerDelegate: AnyObject {
     func sideMenuAnimationController(_ animationController: SideMenuAnimationController, didDismiss viewController: UIViewController)
     func sideMenuAnimationController(_ animationController: SideMenuAnimationController, didPresent viewController: UIViewController)
 }
 
-internal final class SideMenuAnimationController: NSObject, UIViewControllerAnimatedTransitioning {
+final class SideMenuAnimationController: NSObject, UIViewControllerAnimatedTransitioning {
 
     typealias Model = AnimationModel & PresentationModel
 
@@ -69,12 +69,12 @@ internal final class SideMenuAnimationController: NSObject, UIViewControllerAnim
     }
 
     func transitionDuration(using transitionContext: UIViewControllerContextTransitioning?) -> TimeInterval {
-        guard let transitionContext = transitionContext else { return 0 }
+        guard let transitionContext else { return 0 }
         return duration(presenting: transitionContext.isPresenting, interactive: transitionContext.isInteractive)
     }
 
     func animationEnded(_ transitionCompleted: Bool) {
-        guard let presentedViewController = presentedViewController else { return }
+        guard let presentedViewController else { return }
         if presentedViewController.isHidden {
             delegate?.sideMenuAnimationController(self, didDismiss: presentedViewController)
         } else {
@@ -90,17 +90,19 @@ internal final class SideMenuAnimationController: NSObject, UIViewControllerAnim
             animated: animated,
             interactive: interactive,
             animations: { [weak self] in
-                guard let self = self else { return }
+                guard let self else { return }
                 self.transition(presenting: presenting)
                 alongsideTransition?()
-            }, completion: { [weak self] _ in
-                guard let self = self else { return }
+            }, 
+            completion: { [weak self] _ in
+                guard let self else { return }
                 if complete {
                     self.transitionDidEnd(presenting: presenting, completed: true)
                     self.finish(presenting: presenting, completed: true)
                 }
                 completion?(true)
-        })
+            }
+        )
     }
 
     func layout() {
@@ -116,11 +118,7 @@ private extension SideMenuAnimationController {
     }
 
     func prepare(presenting: Bool) {
-        guard
-            presenting,
-            let presentingViewController = presentingViewController,
-            let presentedViewController = presentedViewController
-            else { return }
+        guard presenting, let presentingViewController, let presentedViewController else { return }
 
         originalSuperview = presentingViewController.view.superview
         containerView?.addSubview(presentingViewController.view)
@@ -155,10 +153,7 @@ private extension SideMenuAnimationController {
     }
 
     func finish(presenting: Bool, completed: Bool) {
-        guard
-            presenting != completed,
-            let presentingViewController = self.presentingViewController
-            else { return }
+        guard presenting != completed, let presentingViewController else { return }
         presentedViewController?.view.removeFromSuperview()
         originalSuperview?.addSubview(presentingViewController.view)
     }
@@ -171,17 +166,19 @@ private extension SideMenuAnimationController {
             animated: transitionContext.isAnimated,
             interactive: transitionContext.isInteractive,
             animations: { [weak self] in
-                guard let self = self else { return }
+                guard let self else { return }
                 self.transition(presenting: transitionContext.isPresenting)
-        }, completion: { [weak self] _ in
-            guard let self = self else { return }
-            let completed = !transitionContext.transitionWasCancelled
-            self.transitionDidEnd(presenting: transitionContext.isPresenting, completed: completed)
-            self.finish(presenting: transitionContext.isPresenting, completed: completed)
+            },
+            completion: { [weak self] _ in
+                guard let self else { return }
+                let completed = !transitionContext.transitionWasCancelled
+                self.transitionDidEnd(presenting: transitionContext.isPresenting, completed: completed)
+                self.finish(presenting: transitionContext.isPresenting, completed: completed)
 
-            // Called last. This causes the transition container to be removed and animationEnded() to be called.
-            transitionContext.completeTransition(completed)
-        })
+                // Called last. This causes the transition container to be removed and animationEnded() to be called.
+                transitionContext.completeTransition(completed)
+            }
+        )
     }
 
     func transition(presenting: Bool, animated: Bool = true, interactive: Bool = false, animations: @escaping (() -> Void) = {}, completion: @escaping ((Bool) -> Void) = { _ in }) {
@@ -191,7 +188,7 @@ private extension SideMenuAnimationController {
             return
         }
 
-        let duration = self.duration(presenting: presenting, interactive: interactive)
+        let duration = duration(presenting: presenting, interactive: interactive)
         if interactive {
             // IMPORTANT: The non-interactive animation block will not complete if adapted for interactive. The below animation block must be used!
             UIView.animate(

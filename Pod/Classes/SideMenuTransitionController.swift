@@ -8,12 +8,12 @@
 
 import UIKit
 
-internal protocol SideMenuTransitionControllerDelegate: AnyObject {
+protocol SideMenuTransitionControllerDelegate: AnyObject {
     func sideMenuTransitionController(_ transitionController: SideMenuTransitionController, didDismiss viewController: UIViewController)
     func sideMenuTransitionController(_ transitionController: SideMenuTransitionController, didPresent viewController: UIViewController)
 }
 
-internal final class SideMenuTransitionController: NSObject, UIViewControllerTransitioningDelegate {
+final class SideMenuTransitionController: NSObject, UIViewControllerTransitioningDelegate {
 
     typealias Model = MenuModel & AnimationModel & PresentationModel
 
@@ -35,7 +35,8 @@ internal final class SideMenuTransitionController: NSObject, UIViewControllerTra
         animationController = SideMenuAnimationController(
             config: config,
             leftSide: leftSide,
-            delegate: self)
+            delegate: self
+        )
         return animationController
     }
 
@@ -51,7 +52,7 @@ internal final class SideMenuTransitionController: NSObject, UIViewControllerTra
         return interactionController(using: animator)
     }
 
-    internal func handle(state: SideMenuInteractionController.State) {
+    func handle(state: SideMenuInteractionController.State) {
         interactionController?.handle(state: state)
     }
 
@@ -65,18 +66,19 @@ internal final class SideMenuTransitionController: NSObject, UIViewControllerTra
             animated: animated,
             interactive: interactive,
             alongsideTransition: alongsideTransition,
-            complete: complete, completion: completion
+            complete: complete, 
+            completion: completion
         )
     }
 }
 
 extension SideMenuTransitionController: SideMenuAnimationControllerDelegate {
 
-    internal func sideMenuAnimationController(_ animationController: SideMenuAnimationController, didDismiss viewController: UIViewController) {
+    func sideMenuAnimationController(_ animationController: SideMenuAnimationController, didDismiss viewController: UIViewController) {
         delegate?.sideMenuTransitionController(self, didDismiss: viewController)
     }
 
-    internal func sideMenuAnimationController(_ animationController: SideMenuAnimationController, didPresent viewController: UIViewController) {
+    func sideMenuAnimationController(_ animationController: SideMenuAnimationController, didPresent viewController: UIViewController) {
         delegate?.sideMenuTransitionController(self, didPresent: viewController)
     }
 }

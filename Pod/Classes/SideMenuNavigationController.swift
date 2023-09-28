@@ -7,15 +7,16 @@
 
 import UIKit
 
-@objc public enum SideMenuPushStyle: Int { case
-    `default`,
-    popWhenPossible,
-    preserve,
-    preserveAndHideBackButton,
-    replace,
-    subMenu
+@objc public enum SideMenuPushStyle: Int {
 
-    internal var hidesBackButton: Bool {
+    case `default`
+    case popWhenPossible
+    case preserve
+    case preserveAndHideBackButton
+    case replace
+    case subMenu
+
+    var hidesBackButton: Bool {
         switch self {
         case .preserveAndHideBackButton, .replace: return true
         case .default, .popWhenPossible, .preserve, .subMenu: return false
@@ -23,7 +24,7 @@ import UIKit
     }
 }
 
-internal protocol MenuModel {
+protocol MenuModel {
     /// Prevents the same view controller (or a view controller of the same class) from being pushed more than once. Defaults to true.
     var allowPushOfSameClassTwice: Bool { get }
     /// Forces menus to always animate when appearing or disappearing, regardless of a pushed view controller's animation.
@@ -62,14 +63,14 @@ internal protocol MenuModel {
     var pushStyle: SideMenuPushStyle { get }
 }
 
-@objc public protocol SideMenuNavigationControllerDelegate {
+@objc public protocol SideMenuNavigationControllerDelegate: NSObjectProtocol {
     @objc optional func sideMenuWillAppear(menu: SideMenuNavigationController, animated: Bool)
     @objc optional func sideMenuDidAppear(menu: SideMenuNavigationController, animated: Bool)
     @objc optional func sideMenuWillDisappear(menu: SideMenuNavigationController, animated: Bool)
     @objc optional func sideMenuDidDisappear(menu: SideMenuNavigationController, animated: Bool)
 }
 
-internal protocol SideMenuNavigationControllerTransitionDelegate: AnyObject {
+protocol SideMenuNavigationControllerTransitionDelegate: AnyObject {
     func sideMenuTransitionDidDismiss(menu: Menu)
 }
 
@@ -77,7 +78,7 @@ public struct SideMenuSettings: Model, InitializableStruct {
     public var allowPushOfSameClassTwice: Bool = true
     public var alwaysAnimate: Bool = true
     public var animationOptions: UIView.AnimationOptions = .curveEaseInOut
-    public var blurEffectStyle: UIBlurEffect.Style? = nil
+    public var blurEffectStyle: UIBlurEffect.Style?
     public var completeGestureDuration: Double = 0.35
     public var completionCurve: UIView.AnimationCurve = .easeIn
     public var dismissDuration: Double = 0.35
@@ -104,7 +105,7 @@ public struct SideMenuSettings: Model, InitializableStruct {
     public init() {}
 }
 
-internal typealias Menu = SideMenuNavigationController
+typealias Menu = SideMenuNavigationController
 typealias Model = MenuModel & PresentationModel & AnimationModel
 
 @objcMembers
@@ -118,10 +119,10 @@ open class SideMenuNavigationController: UINavigationController, Model {
         return newValue
     }
 
-    private weak var _sideMenuManager: SideMenuManager?
+    private var _sideMenuManager: SideMenuManager?
     private weak var foundViewController: UIViewController?
     private var originalBackgroundColor: UIColor?
-    private var rotating: Bool = false
+    private var isRotating: Bool = false
     private var transitionController: SideMenuTransitionController?
     private var transitionInteractive: Bool = false
 
@@ -129,17 +130,22 @@ open class SideMenuNavigationController: UINavigationController, Model {
     public weak var sideMenuDelegate: SideMenuNavigationControllerDelegate?
 
     /// The swipe to dismiss gesture.
-    open private(set) weak var swipeToDismissGesture: UIPanGestureRecognizer? = nil
+    open private(set) weak var swipeToDismissGesture: UIPanGestureRecognizer?
     /// The tap to dismiss gesture.
-    open private(set) weak var tapToDismissGesture: UITapGestureRecognizer? = nil
+    open private(set) weak var tapToDismissGesture: UITapGestureRecognizer?
 
-    open var sideMenuManager: SideMenuManager {
-        get { return _sideMenuManager ?? SideMenuManager.default }
+    open var sideMenuManager: SideMenuManager! {
+        get {
+            if _sideMenuManager == nil {
+                _sideMenuManager = SideMenuManager()
+            }
+            return _sideMenuManager
+        }
         set {
             newValue.setMenu(self, forLeftSide: leftSide)
 
-            if let sideMenuManager = _sideMenuManager, sideMenuManager !== newValue {
-                let side = SideMenuManager.PresentDirection(leftSide: leftSide)
+            if let _sideMenuManager, _sideMenuManager !== newValue {
+                let side: SideMenuManager.PresentDirection = leftSide ? .left : .right
                 Print.warning(.menuAlreadyAssigned, arguments: String(describing: self.self), side.name, String(describing: newValue))
             }
             _sideMenuManager = newValue
@@ -159,8 +165,8 @@ open class SideMenuNavigationController: UINavigationController, Model {
         }
     }
 
-    public override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
-        super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+    public override init(nibName: String?, bundle: Bundle?) {
+        super.init(nibName: nibName, bundle: bundle)
         setup()
     }
 
@@ -170,8 +176,8 @@ open class SideMenuNavigationController: UINavigationController, Model {
         setup()
     }
 
-    required public init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
+    required public init?(coder: NSCoder) {
+        super.init(coder: coder)
         setup()
     }
     
@@ -222,14 +228,20 @@ open class SideMenuNavigationController: UINavigationController, Model {
 
         if dismissOnPresent {
             // We're presenting a view controller from the menu, so we need to hide the menu so it isn't showing when the presented view is dismissed.
-            transitionController?.transition(presenting: false, animated: animated, alongsideTransition: { [weak self] in
-                guard let self = self else { return }
-                self.activeDelegate?.sideMenuWillDisappear?(menu: self, animated: animated)
-                }, complete: false, completion: { [weak self] _ in
-                    guard let self = self else { return }
+            transitionController?.transition(
+                presenting: false,
+                animated: animated,
+                alongsideTransition: { [weak self] in
+                    guard let self else { return }
+                    self.activeDelegate?.sideMenuWillDisappear?(menu: self, animated: animated)
+                },
+                complete: false, 
+                completion: { [weak self] _ in
+                    guard let self else { return }
                     self.activeDelegate?.sideMenuDidDisappear?(menu: self, animated: animated)
                     self.view.isHidden = true
-            })
+                }
+            )
         }
     }
 
@@ -265,11 +277,11 @@ open class SideMenuNavigationController: UINavigationController, Model {
         super.viewWillTransition(to: size, with: coordinator)
         
         // Don't bother resizing if the view isn't visible
-        guard let transitionController = transitionController, !view.isHidden else { return }
+        guard let transitionController, !view.isHidden else { return }
 
-        rotating = true
-        
-        let dismiss = self.presentingViewControllerUseSnapshot || self.dismissOnRotation
+        isRotating = true
+
+        let dismiss = presentingViewControllerUseSnapshot || dismissOnRotation
         coordinator.animate(alongsideTransition: { _ in
             if dismiss {
                 transitionController.transition(presenting: false, animated: false, complete: false)
@@ -277,11 +289,11 @@ open class SideMenuNavigationController: UINavigationController, Model {
                 transitionController.layout()
             }
         }) { [weak self] _ in
-            guard let self = self else { return }
+            guard let self else { return }
             if dismiss {
                 self.dismissMenu(animated: false)
             }
-            self.rotating = false
+            self.isRotating = false
         }
     }
 
@@ -297,10 +309,10 @@ open class SideMenuNavigationController: UINavigationController, Model {
             return super.pushViewController(viewController, animated: animated)
         }
 
-        var alongsideTransition: (() -> Void)? = nil
+        var alongsideTransition: (() -> Void)?
         if dismissOnPush {
             alongsideTransition = { [weak self] in
-                guard let self = self else { return }
+                guard let self else { return }
                 self.dismissAnimation(animated: animated || self.alwaysAnimate)
             }
         }
@@ -470,7 +482,7 @@ extension SideMenuNavigationController: SideMenuTransitionControllerDelegate {
     }
 }
 
-internal extension SideMenuNavigationController {
+extension SideMenuNavigationController {
 
     func handleMenuPan(_ gesture: UIPanGestureRecognizer, _ presenting: Bool) {
         let width = menuWidth
@@ -505,7 +517,7 @@ internal extension SideMenuNavigationController {
 
     // Note: although this method is syntactically reversed it allows the interactive property to scoped privately
     func present(from viewController: UIViewController?, interactively: Bool, completion: (() -> Void)? = nil) {
-        guard let viewController = viewController else { return }
+        guard let viewController else { return }
         transitionInteractive = interactively
         viewController.present(self, animated: true, completion: completion)
     }
@@ -525,15 +537,20 @@ private extension SideMenuNavigationController {
     }
 
     func dismissAnimation(animated: Bool) {
-        transitionController?.transition(presenting: false, animated: animated, alongsideTransition: { [weak self] in
-            guard let self = self else { return }
-            self.activeDelegate?.sideMenuWillDisappear?(menu: self, animated: animated)
-            }, completion: { [weak self] _ in
-                guard let self = self else { return }
+        transitionController?.transition(
+            presenting: false,
+            animated: animated,
+            alongsideTransition: { [weak self] in
+                guard let self else { return }
+                self.activeDelegate?.sideMenuWillDisappear?(menu: self, animated: animated)
+            },
+            completion: { [weak self] _ in
+                guard let self else { return }
                 self.activeDelegate?.sideMenuDidDisappear?(menu: self, animated: animated)
                 self.dismiss(animated: false, completion: nil)
                 self.foundViewController = nil
-        })
+            }
+        )
     }
 
     func setup() {
@@ -548,11 +565,7 @@ private extension SideMenuNavigationController {
     func setupBlur() {
         removeBlur()
 
-        guard let blurEffectStyle = blurEffectStyle,
-            let view = topViewController?.view,
-            !UIAccessibility.isReduceTransparencyEnabled else {
-                return
-        }
+        guard let blurEffectStyle, let view = topViewController?.view, !UIAccessibility.isReduceTransparencyEnabled else { return }
 
         originalBackgroundColor = originalBackgroundColor ?? view.backgroundColor
 
@@ -571,10 +584,7 @@ private extension SideMenuNavigationController {
     }
 
     func removeBlur() {
-        guard let originalBackgroundColor = originalBackgroundColor,
-            let view = topViewController?.view else {
-                return
-        }
+        guard let originalBackgroundColor, let view = topViewController?.view else { return }
 
         self.originalBackgroundColor = nil
         view.backgroundColor = originalBackgroundColor
@@ -605,7 +615,7 @@ private extension SideMenuNavigationController {
         switch notification.name {
         case UIApplication.willChangeStatusBarFrameNotification:
             // Dismiss for in-call status bar changes but not rotation
-            if !rotating {
+            if !isRotating {
                 dismissMenu()
             }
         case UIApplication.didEnterBackgroundNotification:
@@ -617,17 +627,19 @@ private extension SideMenuNavigationController {
     }
 
     @discardableResult func addSwipeToDismissGesture(to view: UIView?) -> UIPanGestureRecognizer? {
-        guard enableSwipeToDismissGesture else { return nil }
-        return UIPanGestureRecognizer(addTo: view, target: self, action: #selector(handleDismissMenuPan(_:)))?.with {
-            $0.cancelsTouchesInView = false
-        }
+        guard enableSwipeToDismissGesture, let view else { return nil }
+        let gestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(handleDismissMenuPan(_:)))
+        gestureRecognizer.cancelsTouchesInView = false
+        view.addGestureRecognizer(gestureRecognizer)
+        return gestureRecognizer
     }
 
     @discardableResult func addTapToDismissGesture(to view: UIView?) -> UITapGestureRecognizer? {
-        guard enableTapToDismissGesture else { return nil }
-        return UITapGestureRecognizer(addTo: view, target: self, action: #selector(handleDismissMenuTap(_:)))?.with {
-            $0.cancelsTouchesInView = false
-        }
+        guard enableTapToDismissGesture, let view else { return nil }
+        let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleDismissMenuTap(_:)))
+        gestureRecognizer.cancelsTouchesInView = false
+        view.addGestureRecognizer(gestureRecognizer)
+        return gestureRecognizer
     }
 
     @objc func handleDismissMenuTap(_ tap: UITapGestureRecognizer) {

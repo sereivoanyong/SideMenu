@@ -7,12 +7,13 @@
 
 import UIKit
 
-internal final class SideMenuInteractionController: UIPercentDrivenInteractiveTransition {
+final class SideMenuInteractionController: UIPercentDrivenInteractiveTransition {
 
-    enum State { case
-        update(progress: CGFloat),
-        finish,
-        cancel
+    enum State { 
+
+        case update(progress: CGFloat)
+        case finish
+        case cancel
     }
 
     private(set) var isCancelled: Bool = false

@@ -20,7 +20,7 @@ protocol Coordinator {
     @discardableResult func start() -> Bool
 }
 
-internal final class SideMenuPushCoordinator: Coordinator {
+final class SideMenuPushCoordinator: Coordinator {
 
     struct Model: CoordinatorModel {
         var allowPushOfSameClassTwice: Bool

@@ -7,7 +7,7 @@
 
 import Foundation
 
-internal final class Protected<T: Equatable> {
+final class Protected<T: Equatable> {
 
     typealias ConditionBlock = (_ oldValue: T, T) -> T
 

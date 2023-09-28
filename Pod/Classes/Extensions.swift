@@ -9,7 +9,7 @@ import UIKit
 
 extension NSObject: InitializableClass {}
 
-internal extension UIView {
+extension UIView {
 
     @discardableResult func untransformed(_ block: () -> CGFloat) -> CGFloat {
         let t = transform
@@ -38,7 +38,7 @@ internal extension UIView {
     }
 }
 
-internal extension UIViewController {
+extension UIViewController {
 
     // View controller actively displayed in that layer. It may not be visible if it's presenting another view controller.
     var activeViewController: UIViewController {
@@ -56,7 +56,7 @@ internal extension UIViewController {
 
     // View controller being displayed on screen to the user.
     var topMostViewController: UIViewController {
-        let activeViewController = self.activeViewController
+        let activeViewController = activeViewController
         return activeViewController.presentedViewController?.topMostViewController ?? activeViewController
     }
 
@@ -72,24 +72,14 @@ internal extension UIViewController {
     }
 }
 
-internal extension UIGestureRecognizer {
-
-    convenience init(addTo view: UIView, target: Any, action: Selector) {
-        self.init(target: target, action: action)
-        view.addGestureRecognizer(self)
-    }
-
-    convenience init?(addTo view: UIView?, target: Any, action: Selector) {
-        guard let view = view else { return nil }
-        self.init(addTo: view, target: target, action: action)
-    }
+extension UIGestureRecognizer {
 
     func remove() {
         view?.removeGestureRecognizer(self)
     }
 }
 
-internal extension UIPanGestureRecognizer {
+extension UIPanGestureRecognizer {
 
     var canSwitch: Bool {
         return !(self is UIScreenEdgePanGestureRecognizer)
@@ -108,7 +98,7 @@ internal extension UIPanGestureRecognizer {
     }
 }
 
-internal extension UIApplication {
+extension UIApplication {
 
     var keyWindow: UIWindow? {
         return UIApplication.shared.windows.filter { $0.isKeyWindow }.first

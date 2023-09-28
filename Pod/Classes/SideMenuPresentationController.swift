@@ -7,7 +7,7 @@
 
 import UIKit
 
-internal protocol PresentationModel {
+protocol PresentationModel {
     /// Draws `presentStyle.backgroundColor` behind the status bar. Default is 1.
     var statusBarEndAlpha: CGFloat { get }
     /// Enable or disable interaction with the presenting view controller while the menu is displayed. Enabling may make it difficult to dismiss the menu or cause exceptions if the user tries to present and already presented menu. `presentingViewControllerUseSnapshot` must also set to false. Default is false.
@@ -20,12 +20,12 @@ internal protocol PresentationModel {
     var menuWidth: CGFloat { get }
 }
 
-internal protocol SideMenuPresentationControllerDelegate: AnyObject {
+protocol SideMenuPresentationControllerDelegate: AnyObject {
     func sideMenuPresentationControllerDidTap(_ presentationController: SideMenuPresentationController)
     func sideMenuPresentationController(_ presentationController: SideMenuPresentationController, didPanWith gesture: UIPanGestureRecognizer)
 }
 
-internal final class SideMenuPresentationController {
+final class SideMenuPresentationController {
 
     private let config: PresentationModel
     private weak var containerView: UIView?
@@ -73,10 +73,7 @@ internal final class SideMenuPresentationController {
     }
     
     func containerViewWillLayoutSubviews() {
-        guard let containerView = containerView,
-            let presentedViewController = presentedViewController,
-            let presentingViewController = presentingViewController
-            else { return }
+        guard let containerView, let presentedViewController, let presentingViewController else { return }
 
         presentedViewController.view.untransform {
             presentedViewController.view.frame = frameOfPresentedViewInContainerView
@@ -86,18 +83,15 @@ internal final class SideMenuPresentationController {
             snapshotView?.frame = presentingViewController.view.bounds
         }
 
-        guard let statusBarView = statusBarView else { return }
+        guard let statusBarView else { return }
 
-        var statusBarFrame: CGRect = self.statusBarFrame
+        var statusBarFrame = statusBarFrame
         statusBarFrame.size.height -= containerView.frame.minY
         statusBarView.frame = statusBarFrame
     }
     
     func presentationTransitionWillBegin() {
-        guard let containerView = containerView,
-            let presentedViewController = presentedViewController,
-            let presentingViewController = presentingViewController
-            else { return }
+        guard let containerView, let presentedViewController, let presentingViewController else { return }
 
         if let snapshotView = snapshotView {
             presentingViewController.view.addSubview(snapshotView)
@@ -117,9 +111,7 @@ internal final class SideMenuPresentationController {
     }
 
     func presentationTransition() {
-        guard let presentedViewController = presentedViewController,
-            let presentingViewController = presentingViewController
-            else { return }
+        guard let presentedViewController, let presentingViewController else { return }
 
         transition(
             to: presentedViewController,
@@ -140,9 +132,7 @@ internal final class SideMenuPresentationController {
             return
         }
 
-        guard let presentedViewController = presentedViewController,
-            let presentingViewController = presentingViewController
-            else { return }
+        guard let presentedViewController, let presentingViewController else { return }
 
         addParallax(to: presentingViewController.view)
         
@@ -159,17 +149,13 @@ internal final class SideMenuPresentationController {
         snapshotView?.removeFromSuperview()
         presentationTransition()
 
-        guard let presentedViewController = presentedViewController,
-            let presentingViewController = presentingViewController
-            else { return }
+        guard let presentedViewController, let presentingViewController else { return }
 
         config.presentationStyle.dismissalTransitionWillBegin(to: presentedViewController, from: presentingViewController)
     }
 
     func dismissalTransition() {
-        guard let presentedViewController = presentedViewController,
-            let presentingViewController = presentingViewController
-            else { return }
+        guard let presentedViewController, let presentingViewController else { return }
 
         transition(
             to: presentingViewController,
@@ -192,9 +178,7 @@ internal final class SideMenuPresentationController {
             return
         }
 
-        guard let presentedViewController = presentedViewController,
-            let presentingViewController = presentingViewController
-            else { return }
+        guard let presentedViewController, let presentingViewController else { return }
 
         statusBarView?.removeFromSuperview()
         removeStyles(from: presentingViewController.containerViewController.view)
@@ -220,7 +204,7 @@ private extension SideMenuPresentationController {
     }
 
     var frameOfPresentedViewInContainerView: CGRect {
-        guard let containerView = containerView else { return .zero }
+        guard let containerView else { return .zero }
         var rect = containerView.bounds
         rect.origin.x = leftSide ? 0 : rect.width - config.menuWidth
         rect.size.width = config.menuWidth
@@ -228,7 +212,7 @@ private extension SideMenuPresentationController {
     }
 
     var frameOfPresentingViewInContainerView: CGRect {
-        guard let containerView = containerView else { return .zero }
+        guard let containerView else { return .zero }
         var rect = containerView.frame
         if containerView.superview != nil, containerView.frame.minY > .ulpOfOne {
             let statusBarOffset = statusBarFrame.height - rect.minY
@@ -255,9 +239,7 @@ private extension SideMenuPresentationController {
     }
 
     func layerViews() {
-        guard let presentedViewController = presentedViewController,
-            let presentingViewController = presentingViewController
-            else { return }
+        guard let presentedViewController, let presentingViewController else { return }
 
         statusBarView?.layer.zPosition = 2
 

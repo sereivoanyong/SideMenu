@@ -20,13 +20,13 @@ open class UITableViewVibrantCell: UITableViewCell {
     }
     
     // For registering with UITableView without subclassing otherwise dequeuing instance of the cell causes an exception
-    public override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+    public override init(style: CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
     }
     
-    required public init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
-        
+    required public init?(coder: NSCoder) {
+        super.init(coder: coder)
+
         vibrancyView.frame = bounds
         vibrancyView.autoresizingMask = [.flexibleHeight, .flexibleWidth]
         for view in subviews {
@@ -41,7 +41,7 @@ open class UITableViewVibrantCell: UITableViewCell {
         updateBlur()
     }
     
-    internal func updateBlur() {
+    func updateBlur() {
         // shouldn't be needed but backgroundColor is set to white on iPad:
         backgroundColor = UIColor.clear
         
